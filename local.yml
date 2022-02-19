@@ -142,12 +142,7 @@
         - {dest: '/usr/local/sklep11883/schemaw.sql', regexp: '(hm[0-9]*)', line: 'hm11883'}
         - {dest: '/usr/local/sklep11883/schemaw.sql', regexp: '{{ nrskl_old }}', line: '11883'}
 
-    # Sprawdzanie czy bazy istnieja
-    - name: Step 22
-      mysql_variables:
-        variable: datadir
-      register: base_dir
-      
+          
     # Sprawdzanie czy bazy istnieje
     - name: Step 23
       stat:
