@@ -12,7 +12,7 @@
 
     - name: Sprawdzam katalog sklepu
       stat:
-        path: "/usr/local/sklep{{ NRSKL }}"
+        path: "/usr/local/sklep1"
       register: dir_s
 
     - fail:
