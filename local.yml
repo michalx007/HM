@@ -6,7 +6,7 @@
   tasks:
 
     - hostname:
-        name: "dino-sklep{{ NRSKL }}" 
+      
 
     - assert:
         that:
