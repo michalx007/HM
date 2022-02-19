@@ -322,8 +322,7 @@
       when: kmp_qhm.failed == False
 
     # Inicjacja tcp_client-a
-    - name:
- Step 44
+    - name: Step 44
       shell: "cd /usr/local/sklep11883; bin/tcp_client -zacznijod{{ ansible_date_time.date }}"
       ignore_errors: yes
       when: kmp.failed == False
