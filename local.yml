@@ -19,7 +19,7 @@
     - assert:
         that:
           - "{{ KOD_GOLD }} < 100000 "
-          - "{{ KOD_GOLD }} > 0 "
+          - "{{ KOD_GOLD }} > 1 "
         quiet: true    
         msg: "NIEPOPRAWNY NUMER W SYSTEMIE GOLD"
 
