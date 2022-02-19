@@ -6,7 +6,7 @@
   tasks:
 
     - hostname:
-    - name: "127.0.0.1"
+    name: "dino-s{{ NRSKL }}"  
       
 
     - assert:
