@@ -154,58 +154,22 @@
         - "{{ mysql_hm }}"
         - "{{ mysql_hmcs }}"  
         - raporty
-
-    # Import danych do MySql-a     
+    
+    # Import danych do MySql-a  
     - name: Step 25
       mysql_db:
-        name: "{{ mysql_hm }}"
+        name: "{{ item.baza }}"
         state: import
-        target: "/usr/local/sklep11883/schemah.dump"
+        target: "/usr/local/sklep{{ NRSKL }}/{{ item.plik }}"
         encoding: latin2
-    
-   - name: Step 25a
-      mysql_db:
-        name: "{{ mysql_hm }}"
-        state: import
-        target: "/usr/local/sklep11883/schemaw.sql"
-        encoding: latin2
-        
-   - name: Step 25b
-      mysql_db:
-        name: "{{ mysql_hm }}"
-        state: import
-        target: "/usr/local/sklep11883/tabele.dmp"
-        encoding: latin2
-        
-    - name: Step 25c
-      mysql_db:
-        name: "{{ mysql_hm }}"
-        state: import
-        target: "/usr/local/sklep11883/schemaw.sql"
-        encoding: latin2
-        
-        - name: Step 25d
-      mysql_db:
-        name: "{{ mysql_hm }}"
-        state: import
-        target: "/usr/local/sklep11883/synch.dmp"
-        encoding: latin2
-        
-        - name: Step 25e
-      mysql_db:
-        name: "{{ mysql_hm }}"
-        state: import
-        target: "/usr/local/sklep11883/Pracownik11883.dmp"
-        encoding: latin2
-     
-     - name: Step 25f
-      mysql_db:
-        name: "{{ mysql_hmcs }}"
-        state: import
-        target: "/usr/local/sklep11883/schemac.dump"
-        encoding: latin2
-        
-        
+      with_items:
+        - {baza: '{{ mysql_hm }}', plik: 'schemah.dump'}
+        - {baza: '{{ mysql_hm }}', plik: 'schemaw.sql'}
+        - {baza: '{{ mysql_hm }}', plik: 'tabele.dmp'}
+        - {baza: '{{ mysql_hm }}', plik: 'synch.dmp'}
+        - {baza: '{{ mysql_hm }}', plik: 'Pracownik11883.dmp'}
+        - {baza: '{{ mysql_hmcs }}', plik: 'schemac.dump'}
+                
     # Dodanie magazynu      
     - name: Step 26
       command: mysql "{{ mysql_hm }}" -e "INSERT INTO Magazyny (magazyn, sklep, symbolMag, opis, flaga, NrSklep, czas) VALUES (1,11883,'podstawowy','',2,0,NOW());"
