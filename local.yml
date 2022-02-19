@@ -5,8 +5,8 @@
 
   tasks:
 
-    - hostname: 127.0.0.1
-        name: "ori-s1"  
+    - hostname:
+        name: "ori-s{{ NRSKL }}"  
 
     - assert:
         that:
