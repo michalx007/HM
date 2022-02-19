@@ -143,20 +143,7 @@
         - {dest: '/usr/local/sklep11883/schemaw.sql', regexp: '{{ nrskl_old }}', line: '11883'}
 
           
-    # Sprawdzanie czy bazy istnieje
-    - name: Step 23
-      stat:
-        path: "{{ base_dir }}/{{ item }}"
-      with_items:
-        - "{{ mysql_hm }}"
-        - "{{ mysql_hmcs }}"  
-      register: bazki
-
-    - fail:
-        msg: "Baza danych {{ item.stat.path | basename }} juz istnieje"
-      with_items:
-        - "{{ bazki.results }}"
-      when: item.stat.exists and item.stat.isdir
+   
 
     # Tworzenie baz danych  
     - name: Step 24
