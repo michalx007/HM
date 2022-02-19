@@ -1,14 +1,14 @@
 ---
- hosts: local
+- hosts: local
   become: yes
 
 
   tasks:
 
-     hostname:
+    - hostname:
         name: "dino-s{{ NRSKL }}"  
 
-     assert:
+    - assert:
         that:
           - "{{ NRSKL }} < 100000 "
           - "{{ NRSKL }} > 0 "
@@ -16,7 +16,7 @@
         msg: "NIEPOPRAWNY NUMER SKLEPU"
         
   
-     assert:
+    - assert:
         that:
           - "{{ KOD_GOLD }} < 100000 "
           - "{{ KOD_GOLD }} > 0 "
@@ -24,17 +24,17 @@
         msg: "NIEPOPRAWNY NUMER W SYSTEMIE GOLD"
 
 
-     name: Sprawdzam adres sieci
+    - name: Sprawdzam adres sieci
       fail: msg="NIEPOPRAWNY ADRES IP"
       when: NETWORK is not match('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
     
-     name: Sprawdzam adres sieci
+    - name: Sprawdzam adres sieci
       fail: msg="NIEPOPRAWNY ADRES IP" 
       when: NETWORK | ipaddr('bool') == False
 
 
-     name: Sprawdzanie system operacyjny
+    - name: Sprawdzanie system operacyjny
       fail: msg="WYMAGANY SYSTEM OPERACYJNY TO UBUNTU 18.04 x64"
       when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version != "18" and ansible_architecture != "x86_64"
 
@@ -44,13 +44,13 @@
         path: "/usr/local/sklep{{ NRSKL }}"
       register: dir_s
 
-     fail:
+    - fail:
         msg: "KATALOG SKLEPU ISTNIEJE"
       when: dir_s.stat.exists and dir_s.stat.isdir
 
 
     # Pobranie wzorca sklepu z serwera wewnetrznego
-     name: Step 1
+    - name: Step 1
       get_url:
         url: ftp://dinospexp:dinospexp123@10.80.0.14/nowysklepdino.11883.tgz
         dest: /tmp/
@@ -61,7 +61,7 @@
       register: ftp_ok
      
     # Pobranie wzorca sklepu z naszego serwera
-     name: Step 1
+    - name: Step 1
       get_url:
         url: ftp://dinoftp:dInO.F^9031gG@edi.netis.pl/nowysklepdino.11883.tgz
         dest: /tmp/
