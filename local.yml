@@ -162,8 +162,7 @@
         state: import
         target: "/usr/local/sklep11883/schemah.dump"
         encoding: latin2
-      with_items:
-                - {baza: '{{ mysql_hmcs }}', plik: 'schemac.dump'}
+    
    - name: Step 25a
       mysql_db:
         name: "{{ mysql_hm }}"
