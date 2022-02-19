@@ -19,17 +19,6 @@
         msg: "KATALOG SKLEPU ISTNIEJE"
       when: dir_s.stat.exists and dir_s.stat.isdir
 
-
-    # Pobranie wzorca sklepu z serwera wewnetrznego
-    - name: Step 1
-      get_url:
-        url: ftp://dinospexp:dinospexp123@10.80.0.14/nowysklepdino.11883.tgz
-        dest: /tmp/
-        force: yes
-        timeout: 60
-      no_log: True  
-      ignore_errors: True  
-      register: ftp_ok
      
     # Pobranie wzorca sklepu z naszego serwera
     - name: Step 1
