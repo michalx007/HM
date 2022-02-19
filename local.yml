@@ -5,11 +5,7 @@
 
   tasks:
 
-    - hostname:
-    name: "dino-s{{ NRSKL }}"  
-      
-
-    - assert:
+       - assert:
         that:
           - "{{ NRSKL }} < 100000 "
           - "{{ NRSKL }} > 0 "
@@ -20,7 +16,7 @@
     - assert:
         that:
           - "{{ KOD_GOLD }} < 100000 "
-          - "{{ KOD_GOLD }} > 1 "
+          - "{{ KOD_GOLD }} > 0 "
         quiet: true    
         msg: "NIEPOPRAWNY NUMER W SYSTEMIE GOLD"
 
