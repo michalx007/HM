@@ -19,17 +19,7 @@
         msg: "KATALOG SKLEPU ISTNIEJE"
       when: dir_s.stat.exists and dir_s.stat.isdir
 
-     
-    # Pobranie wzorca sklepu z naszego serwera
-    - name: Step 1
-      get_url:
-        url: ftp://dinoftp:dInO.F^9031gG@edi.netis.pl/nowysklepdino.11883.tgz
-        dest: /tmp/
-        force: yes
-        timeout: 60
-      no_log: True  
-      when: ftp_ok.failed == True   
-    
+          
     # Tworze katalog sklepu    
     - name: Step 2
       file:
