@@ -99,17 +99,17 @@
         - "{{ src_path }}/Makefile.local"  
       register: pliki_konf
 
-    # Zmiana konfguracji zmienne.dat
+   # Zmiana konfguracji zmienne.dat
     - name: Step 13
       replace:
         dest: "{{ item.dest }}"
         regexp: "{{ item.regexp }}"
         replace: "{{ item.line }}"
       with_items:
-        - {dest: '/usr/local/sklep11883/konfiguracja/zmienne.dat', regexp: '(baza_serwera)(.*)', line: '\1\thm11883'}
-        - {dest: '/usr/local/sklep118833/konfiguracja/zmienne.dat', regexp: '(ceny_local)(.*)', line: '\1\thm11883'}
-        - {dest: '/usr/local/sklep11883/konfiguracja/zmienne.dat', regexp: '(gold_kod_obiektu)(.*)', line: '\1\t11883'}
-        - {dest: '/usr/local/sklep11883/konfiguracja/zmienne.dat', regexp: '(kdsk_kdserv_suffix)(.*)', line: '\1\t11883'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(baza_serwera)(.*)', line: '\1\thm{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(ceny_local)(.*)', line: '\1\thm{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(gold_kod_obiektu)(.*)', line: '\1\t{{ KOD_GOLD }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(kdsk_kdserv_suffix)(.*)', line: '\1\t{{ NRSKL }}'}
       when: pliki_konf.results[0].stat.exists
 
     # Zmiana konfguracji parms.dat
@@ -119,9 +119,9 @@
         regexp: "{{ item.regexp }}"
         replace: "{{ item.line }}"
       with_items:
-        - {dest: '/usr/local/sklep11883/konfiguracja/parms.dat', regexp: '(NrSklep).*', line: '\1\t11883'}
-        - {dest: '/usr/local/sklep11883/konfiguracja/parms.dat', regexp: '(cli_serv).*', line: '\1\t11883'}
-        - {dest: '/usr/local/sklep11883/konfiguracja/parms.dat', regexp: '(nazwa_skl).*', line: '\1\tSklep DINO 11883'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/parms.dat', regexp: '(NrSklep).*', line: '\1\t{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/parms.dat', regexp: '(cli_serv).*', line: '\1\t{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/parms.dat', regexp: '(nazwa_skl).*', line: '\1\tSklep DINO {{ NRSKL }}'}
       when: pliki_konf.results[1].stat.exists
 
     # Zmiana konfguracji Makefile
