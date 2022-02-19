@@ -7,7 +7,7 @@
 
     - name: Sprawdzanie system operacyjny
       fail: msg="WYMAGANY SYSTEM OPERACYJNY TO UBUNTU 18.04 x64"
-      when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version != "18" and ansible_architecture != "x86_64"
+      when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version != "20" and ansible_architecture != "x86_64"
 
 
     - name: Sprawdzam katalog sklepu
@@ -161,6 +161,7 @@
         name: "{{ item.baza }}"
         state: import
         target: "/usr/local/sklep{{ NRSKL }}/{{ item.plik }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
         encoding: latin2
       with_items:
         - {baza: '{{ mysql_hm }}', plik: 'schemah.dump'}
