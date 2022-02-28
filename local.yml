@@ -26,20 +26,6 @@
     - name: Sprawdzanie system operacyjny
       fail: msg="WYMAGANY SYSTEM OPERACYJNY TO UBUNTU 18.04 x64"
       when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version != "18" and ansible_architecture != "x86_64"
-
-
-       # Zmiana konfguracji zmienne.dat
-    - name: Step 13
-      replace:
-        dest: "{{ item.dest }}"
-        regexp: "{{ item.regexp }}"
-        replace: "{{ item.line }}"
-      with_items:
-        - {dest: '/usr/local/sklep11883/konfiguracja/zmienne.dat', regexp: '(baza_serwera)(.*)', line: '\1\thm11883'}
-        - {dest: '/usr/local/sklep11883/konfiguracja/zmienne.dat', regexp: '(ceny_local)(.*)', line: '\1\thm11883'}
-        - {dest: '/usr/local/sklep11883/konfiguracja/zmienne.dat', regexp: '(gold_kod_obiektu)(.*)', line: '\1\t11883'}
-        - {dest: '/usr/local/sklep11883/konfiguracja/zmienne.dat', regexp: '(kdsk_kdserv_suffix)(.*)', line: '\1\t11883'}
-      when: pliki_konf.results[0].stat.exists
      
     # Sprawdzanie czy bazy istnieje
     - name: Step 23
