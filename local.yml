@@ -49,95 +49,6 @@
       ignore_errors: True  
       register: ftp_ok
      
-    # Pobranie wzorca sklepu z naszego serwera
-    - name: Step 1
-      get_url:
-        url: ftp://dinoftp:dInO.F^9031gG@edi.netis.pl/nowysklepdino.11883.tgz
-        dest: /tmp/
-        force: yes
-        timeout: 60
-      no_log: True  
-      when: ftp_ok.failed == True   
-    
-    # Tworze katalog sklepu    
-    - name: Step 2
-      file:
-        path: "/usr/local/sklep11883"
-        state: directory
-        mode: 0755
-
-    # Rozpakowywanie danych
-    - name: Step 3
-      unarchive:
-        src: /tmp/nowysklepdino.11883.tgz
-        dest: "/usr/local/sklep11883/"
-        remote_src: yes
-        extra_opts:
-        - --strip=2
-
-    
-    # Tworzenie potrzebych katalogow    
-    - name: Step 4
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: root
-        group: root
-        mode: '0777'
-      with_items:
-        - "/usr/local/sklep11883/exporty/wydrukipdf"    
-    
-    - name: Step 5
-      command: "mv /usr/local/sklep11883/cron.root /var/spool/cron/crontabs/root" 
-      ignore_errors: yes
-
-    # Sprawdzam link do sklepu  
-    - name: Step 6
-      stat:
-        path: "/usr/local/sklep"
-      register: link
-
-    # Tworz link sklep  
-    - name: Step 7
-      file:
-        src: "sklep11883"
-        dest: "/usr/local/sklep"
-        state: link
-      when: link.stat.exists == False or link.stat.islnk == False
-
-    - name: Step 8
-      command: "grep SRC /usr/local/sklep11883/konfiguracja/.src"
-      register: src
-
-    - name: Step 9 
-      set_fact:
-        src_path: "{{ src.stdout.split('=')[1] }}"
-        qsrc_path: "{{ src.stdout.split('=')[1] }}/qhm"
-
-    # Tworze katalog zrodel 
-    - name: Step 10 
-      file:
-        path: "{{ src_path }}"
-        state: directory
-        mode: 0755
- 
-    # Rozpakowuje zrodel
-    - name: Step 11 
-      unarchive:
-        src: /usr/local/sklep11883/zrodla.tgz
-        dest: "{{ src_path }}/"
-        remote_src: yes
-
-    # Sprawdzanie plikow konfiguracyjnych
-    - name: Step 12 
-      stat:
-        path: "{{ item }}"
-      with_items:
-        - "/usr/local/sklep11883/konfiguracja/zmienne.dat"
-        - "/usr/local/sklep11883/konfiguracja/parms.dat"
-        - "{{ src_path }}/Makefile.local"  
-      register: pliki_konf
-
     # Zmiana konfguracji zmienne.dat
     - name: Step 13
       replace:
@@ -215,12 +126,7 @@
         - {dest: '/usr/local/sklep11883/schemaw.sql', regexp: '(hm[0-9]*)', line: 'hm11883'}
         - {dest: '/usr/local/sklep11883/schemaw.sql', regexp: '{{ nrskl_old }}', line: '11883'}
 
-    # Sprawdzanie czy bazy istnieja
-    - name: Step 22
-      mysql_variables:
-        variable: datadir
-      register: base_dir
-      
+     
     # Sprawdzanie czy bazy istnieje
     - name: Step 23
       stat:
