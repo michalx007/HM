@@ -23,11 +23,6 @@
         quiet: true    
         msg: "NIEPOPRAWNY NUMER W SYSTEMIE GOLD"
   
-    - name: Sprawdzam adres sieci
-      fail: msg="NIEPOPRAWNY ADRES IP" 
-      when: NETWORK | ipaddr('bool') == False
-
-
     - name: Sprawdzanie system operacyjny
       fail: msg="WYMAGANY SYSTEM OPERACYJNY TO UBUNTU 18.04 x64"
       when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version != "18" and ansible_architecture != "x86_64"
