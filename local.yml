@@ -6,27 +6,231 @@
   tasks:
 
     - hostname:
-        name: "dino-s11883"  
+        name: "dino-s{{ NRSKL }}"  
 
     - assert:
         that:
-          - "11883 < 100000 "
-          - "11883 > 0 "
+          - "{{ NRSKL }} < 100000 "
+          - "{{ NRSKL }} > 0 "
         quiet: true    
         msg: "NIEPOPRAWNY NUMER SKLEPU"
         
   
     - assert:
         that:
-          - "11883 < 100000 "
-          - "11883 > 0 "
+          - "{{ KOD_GOLD }} < 100000 "
+          - "{{ KOD_GOLD }} > 0 "
         quiet: true    
         msg: "NIEPOPRAWNY NUMER W SYSTEMIE GOLD"
-  
+
+
+    - name: Sprawdzam adres sieci
+      fail: msg="NIEPOPRAWNY ADRES IP"
+      when: NETWORK is not match('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+
+    
+    - name: Sprawdzam adres sieci
+      fail: msg="NIEPOPRAWNY ADRES IP" 
+      when: NETWORK | ipaddr('bool') == False
+
+
     - name: Sprawdzanie system operacyjny
       fail: msg="WYMAGANY SYSTEM OPERACYJNY TO UBUNTU 18.04 x64"
       when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version != "18" and ansible_architecture != "x86_64"
+
+
+    - name: Sprawdzam katalog sklepu
+      stat:
+        path: "/usr/local/sklep{{ NRSKL }}"
+      register: dir_s
+
+    - fail:
+        msg: "KATALOG SKLEPU ISTNIEJE"
+      when: dir_s.stat.exists and dir_s.stat.isdir
+
+
+    # Pobranie wzorca sklepu z serwera wewnetrznego
+    - name: Step 1
+      get_url:
+        url: ftp://dinospexp:dinospexp123@10.80.0.14/nowysklepdino.11883.tgz
+        dest: /tmp/
+        force: yes
+        timeout: 60
+      no_log: True  
+      ignore_errors: True  
+      register: ftp_ok
      
+    # Pobranie wzorca sklepu z naszego serwera
+    - name: Step 1
+      get_url:
+        url: ftp://dinoftp:dInO.F^9031gG@edi.netis.pl/nowysklepdino.11883.tgz
+        dest: /tmp/
+        force: yes
+        timeout: 60
+      no_log: True  
+      when: ftp_ok.failed == True   
+    
+    # Tworze katalog sklepu    
+    - name: Step 2
+      file:
+        path: "/usr/local/sklep{{ NRSKL }}"
+        state: directory
+        mode: 0755
+
+    # Rozpakowywanie danych
+    - name: Step 3
+      unarchive:
+        src: /tmp/nowysklepdino.11883.tgz
+        dest: "/usr/local/sklep{{ NRSKL }}/"
+        remote_src: yes
+        extra_opts:
+        - --strip=2
+
+    
+    # Tworzenie potrzebych katalogow    
+    - name: Step 4
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+      with_items:
+        - "/usr/local/sklep{{ NRSKL }}/exporty/wydrukipdf"    
+    
+    - name: Step 5
+      command: "mv /usr/local/sklep{{ NRSKL }}/cron.root /var/spool/cron/crontabs/root" 
+      ignore_errors: yes
+
+    # Sprawdzam link do sklepu  
+    - name: Step 6
+      stat:
+        path: "/usr/local/sklep"
+      register: link
+
+    # Tworz link sklep  
+    - name: Step 7
+      file:
+        src: "sklep{{ NRSKL }}"
+        dest: "/usr/local/sklep"
+        state: link
+      when: link.stat.exists == False or link.stat.islnk == False
+
+    - name: Step 8
+      command: "grep SRC /usr/local/sklep{{ NRSKL }}/konfiguracja/.src"
+      register: src
+
+    - name: Step 9 
+      set_fact:
+        src_path: "{{ src.stdout.split('=')[1] }}"
+        qsrc_path: "{{ src.stdout.split('=')[1] }}/qhm"
+
+    # Tworze katalog zrodel 
+    - name: Step 10 
+      file:
+        path: "{{ src_path }}"
+        state: directory
+        mode: 0755
+ 
+    # Rozpakowuje zrodel
+    - name: Step 11 
+      unarchive:
+        src: /usr/local/sklep{{ NRSKL }}/zrodla.tgz
+        dest: "{{ src_path }}/"
+        remote_src: yes
+
+    # Sprawdzanie plikow konfiguracyjnych
+    - name: Step 12 
+      stat:
+        path: "{{ item }}"
+      with_items:
+        - "/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat"
+        - "/usr/local/sklep{{ NRSKL }}/konfiguracja/parms.dat"
+        - "{{ src_path }}/Makefile.local"  
+      register: pliki_konf
+
+    # Zmiana konfguracji zmienne.dat
+    - name: Step 13
+      replace:
+        dest: "{{ item.dest }}"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+      with_items:
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(baza_serwera)(.*)', line: '\1\thm{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(ceny_local)(.*)', line: '\1\thm{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(gold_kod_obiektu)(.*)', line: '\1\t{{ KOD_GOLD }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat', regexp: '(kdsk_kdserv_suffix)(.*)', line: '\1\t{{ NRSKL }}'}
+      when: pliki_konf.results[0].stat.exists
+
+    # Zmiana konfguracji parms.dat
+    - name: Step 14
+      replace:
+        dest: "{{ item.dest }}"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+      with_items:
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/parms.dat', regexp: '(NrSklep).*', line: '\1\t{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/parms.dat', regexp: '(cli_serv).*', line: '\1\t{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/parms.dat', regexp: '(nazwa_skl).*', line: '\1\tSklep DINO {{ NRSKL }}'}
+      when: pliki_konf.results[1].stat.exists
+
+    # Zmiana konfguracji Makefile
+    - name: Step 15
+      replace:
+        dest: "{{ item.dest }}"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+      with_items:
+        - {dest: '{{ src_path }}/Makefile.local', regexp: '(SUFFIX=.*)', line: 'SUFFIX={{ NRSKL }}'}
+        - {dest: '{{ src_path }}/Makefile.local', regexp: '(BINDIR=)(.*)', line: '\1/usr/local/sklep{{ NRSKL }}/bin/'}
+      when: pliki_konf.results[2].stat.exists
+
+    # Zmiana zmiennych 
+    - name: Step 16
+      replace:
+        dest: /usr/local/waginew/konfiguracja/zmienne.dat
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+      with_items:
+        - { regexp: '(baza)(.*)', line: '\1\thm{{ NRSKL }}' }
+
+    # Pobieram nazwe bazy      
+    - name: Step 17
+      command: "grep baza_serwera /usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat"
+      register: _mysql_hm
+
+    # Pobieram nazwe bazy_2  
+    - name: Step 18
+      command: "grep ceny_serv /usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat"
+      register: _mysql_hmcs
+
+    - name: Step 19
+      shell: "grep Database: /usr/local/sklep{{ NRSKL }}/schemah.dump | grep -o [[:digit:]]*[[:digit:]]"
+      register: _nrskle_old
+
+    # Zapisuje nazwe bazy dancyh   
+    - name: Step 20
+      set_fact:
+        mysql_hm: "{{ _mysql_hm.stdout.split()[1] }}"
+        mysql_hmcs: "{{ _mysql_hmcs.stdout.split()[1] }}"
+        nrskl_old: "{{ _nrskle_old.stdout }}"
+
+    # Zmiana baz
+    - name: Step 21
+      replace:
+        dest: "{{ item.dest }}"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+      with_items:
+        - {dest: '/usr/local/sklep{{ NRSKL }}/schemaw.sql', regexp: '(hm[0-9]*)', line: 'hm{{ NRSKL }}'}
+        - {dest: '/usr/local/sklep{{ NRSKL }}/schemaw.sql', regexp: '{{ nrskl_old }}', line: '{{ NRSKL }}'}
+
+    # Sprawdzanie czy bazy istnieja
+    - name: Step 22
+      mysql_variables:
+        variable: datadir
+      register: base_dir
+      
     # Sprawdzanie czy bazy istnieje
     - name: Step 23
       stat:
@@ -57,7 +261,7 @@
       mysql_db:
         name: "{{ item.baza }}"
         state: import
-        target: "/usr/local/sklep11883/{{ item.plik }}"
+        target: "/usr/local/sklep{{ NRSKL }}/{{ item.plik }}"
         encoding: latin2
       with_items:
         - {baza: '{{ mysql_hm }}', plik: 'schemah.dump'}
@@ -69,13 +273,13 @@
 
     # Dodanie magazynu      
     - name: Step 26
-      command: mysql "{{ mysql_hm }}" -e "INSERT INTO Magazyny (magazyn, sklep, symbolMag, opis, flaga, NrSklep, czas) VALUES (1,11883,'podstawowy','',2,0,NOW());"
+      command: mysql "{{ mysql_hm }}" -e "INSERT INTO Magazyny (magazyn, sklep, symbolMag, opis, flaga, NrSklep, czas) VALUES (1,{{ NRSKL }},'podstawowy','',2,0,NOW());"
   
     - name: Step 27
-      command: mysql "{{ mysql_hm }}" -e "UPDATE StanKasy2 set stan=11883 where idStanu='Numer Sklepu';"
+      command: mysql "{{ mysql_hm }}" -e "UPDATE StanKasy2 set stan={{ NRSKL }} where idStanu='Numer Sklepu';"
      
     - name: Step 28
-      command: mysql "{{ mysql_hm }}" -e "update StanKasy2 set NrSklep=11883 where NrSklep <> 0;"
+      command: mysql "{{ mysql_hm }}" -e "update StanKasy2 set NrSklep={{ NRSKL }} where NrSklep <> 0;"
 
     - name: Step 29
       command: mysql "{{ mysql_hm }}" -e "delete from StanKasy2 where idStanu='opt_secure_key';"
@@ -85,12 +289,12 @@
       ignore_errors: true   
 
     - name: Step 31
-      command: mysql "{{ mysql_hm }}" -e "UPDATE SklepCenyStany set NrSklep=11883;"
+      command: mysql "{{ mysql_hm }}" -e "UPDATE SklepCenyStany set NrSklep={{ NRSKL }};"
 
     # Szukanie plikow pep*
     - name: Step 32
       find:
-        paths: "/usr/local/sklep11883/konfiguracja/"
+        paths: "/usr/local/sklep{{ NRSKL }}/konfiguracja/"
         patterns: 'pep_*'
         recurse: no
       register: pep
@@ -104,7 +308,7 @@
 
     - name: Step 34
       replace:
-        dest: "/usr/local/sklep11883/konfiguracja/zmienne.dat"
+        dest: "/usr/local/sklep{{ NRSKL }}/konfiguracja/zmienne.dat"
         regexp: '(konto_bankowe)(\t.*)'
         replace: '\1'
 
@@ -121,6 +325,7 @@
       systemd:
         name: rc-firewall
         enabled: no
+
     # Wylaczanie rc-firewall
     - name: Step 37
       file:
@@ -131,7 +336,6 @@
     - name: Step 38
       shell: make -C "{{ src_path }}/src" clean all
       register: kmp
-      ignore_errors: yes
       
     # Zmiana sciezki
     - name: Step 39
@@ -144,45 +348,34 @@
       shell:
         chdir: "{{ qsrc_path }}"
         cmd: scripts/qmake_opt_mariadb.sh debug
-      when: kmp.failed == False  
 
     # Kompilacja QHM
     - name: Step 41
       shell: make -C "{{ qsrc_path }}" clean
-      register: kmp_qhm
-      ignore_errors: yes
-      when: kmp.failed == False
   
     # Kompilacja QHM  
     - name: Step 42 
       shell: make -C "{{ qsrc_path }}" -j4
-      register: kmp_qhm
-      ignore_errors: yes
-      when: kmp.failed == False
 
     # Instalacja QHM  
     - name: Step 43
       shell: make -C "{{ qsrc_path }}" install
-      ignore_errors: yes
-      when: kmp_qhm.failed == False
 
     # Inicjacja tcp_client-a
     - name: Step 44
-      shell: "cd /usr/local/sklep11883; bin/tcp_client -zacznijod{{ ansible_date_time.date }}"
+      shell: "cd /usr/local/sklep{{ NRSKL }}; bin/tcp_client -zacznijod{{ ansible_date_time.date }}"
       ignore_errors: yes
-      when: kmp.failed == False
 
     # Start kdserv-a  
     - name: Step 45
-      shell: "cd /usr/local/sklep11883; bin/odpalaj bin/kdserv11883 1>/dev/null 2>/dev/null &"
-      when: kmp.failed == False
+      shell: "cd /usr/local/sklep{{ NRSKL }}; bin/odpalaj bin/kdserv{{ NRSKL }} 1>/dev/null 2>/dev/null &"
    
     # Usuwam skrot instalacji HM  
     - name: Step 46
       file:
         path: /home/sklep/Pulpit/HM.desktop
         state: absent
-      when: kmp_qhm.failed == False
+      when: kmp.failed == False
 
     # Skroty na pulpicie  
     - name: Step 47
@@ -195,14 +388,14 @@
       with_items:
         - {src: 'templates/Hipermarket.desktop.j2', dest: '/home/sklep/Pulpit/Hipermarket.desktop'} 
         - {src: 'templates/QHipermarket_kasjer.desktop.j2', dest: '/home/sklep/Pulpit/QHipermarket_kasjer.desktop'} 
-      when: kmp_qhm.failed == False 
+      when: kmp.failed == False 
 
     # Skrypty  
     - name: Step 48
       shell:
       args:
         executable: /bin/bash
-        chdir: "/usr/local/sklep11883"
+        chdir: "/usr/local/sklep{{ NRSKL }}"
         cmd: "{{ item }}"
       with_items:
        - "skrypty/Sql/CreateTablesFaktury zaloz"
@@ -234,15 +427,15 @@
         - {dest: '/etc/rc.local', regexp: '^#(\./bin.*)', line: '\1'}
         - {dest: '/var/spool/cron/crontabs/root', regexp: '(.*export_POS_to_GOLD.*)' , line: '#\1' }  
         - {dest: '/etc/samba/smb.conf', regexp: '(^hosts allow.*)', line: '\1 {{ NET }}'}
-        - {dest: '/home/quicksell/config.properties', regexp: '(^dbName=)(.*)', line: '\1hm11883'}
+        - {dest: '/home/quicksell/config.properties', regexp: '(^dbName=)(.*)', line: '\1hm{{ NRSKL }}'}
         - {dest: '/home/sklep/Pulpit/GOLD_PROD.jnlp', regexp: '10.80.0.10:8082', line: '10.80.0.10:{{ PORT_GOLD }}' }
-        - {dest: '/usr/local/sklep11883/konfiguracja/pricechecker.dat', regexp: '(adres_podsieci)(.*)', line: '\1={{ NETWORK }}' }
+        - {dest: '/usr/local/sklep{{ NRSKL }}/konfiguracja/pricechecker.dat', regexp: '(adres_podsieci)(.*)', line: '\1={{ NETWORK }}' }
         - {dest: '/lib/systemd/system/waga_daemon.service', regexp: '(ExecStart=)(.*)', line: '\1/usr/local/wagi/bin/waga_daemon --nonstop' }
 
     # Usuwanie z clear.pz1      
     - name: Step 50
       lineinfile:
-        path: "/usr/local/sklep11883/skrypty.loc/clear.pz1"
+        path: "/usr/local/sklep{{ NRSKL }}/skrypty.loc/clear.pz1"
         regexp: ".*przygotuj_nowy_sklep.sh"
         state: absent
  
@@ -371,7 +564,7 @@
       shell:
       args:
         executable: /bin/bash
-        chdir: "/usr/local/sklep11883"
+        chdir: "/usr/local/sklep{{ NRSKL }}"
         cmd: skrypty/kolejka -nodialog
       ignore_errors: yes
 
